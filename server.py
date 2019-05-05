@@ -1,6 +1,4 @@
 import socket as Socket
-import time # temp
-import sys
 from threading import Thread
 from src.config import config
 
@@ -16,7 +14,7 @@ class Server:
         self.__socket.bind((self.__hostname, self.__port))
         self.__socket.listen(5) # Temp value
         self.__socket.settimeout(0.1)
-        print("Server has been started on %s:%s." % self.__socket.getfqdn())
+        print("Server has been started on " + self.__hostname + ":" + str(self.__port))
 
         self.__acceptThread = Thread(target=self.__onConnection)
         self.__acceptThread.start()
