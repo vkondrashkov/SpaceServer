@@ -19,7 +19,6 @@ THREAD_IS_RUNNING = True
 
 client_socket = Socket.socket()
 client_socket.connect(ADDRESS)
-client_socket.settimeout(0.1)
 
 def receive():
     """Handles receiving of messages."""
@@ -27,13 +26,14 @@ def receive():
     while THREAD_IS_RUNNING:
         try:
             msg = client_socket.recv(BUFFER_SIZE).decode("utf8")
+            if not msg:
+                raise OSError
             print(msg)
         except OSError:  # Possibly client has left the chat.
             client_socket.close()
             break
 
 if __name__ == "__main__":
-    #global THREAD_IS_RUNNING
     receive_thread = Thread(target=receive)
     receive_thread.start()
 
@@ -42,6 +42,9 @@ if __name__ == "__main__":
             key = input()
             if key == "exit":
                 raise KeyboardInterrupt
+            client_socket.send(key.encode("utf8"))
         except KeyboardInterrupt:
+            client_socket.send(bytes("{exit}", "utf8"))
             THREAD_IS_RUNNING = False
+            receive_thread.join()
             exit()
