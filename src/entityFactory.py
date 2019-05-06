@@ -5,7 +5,10 @@ class EntityFactory:
         id = json["id"]
         entityType = json["entityType"]
         health = json["health"]
-        x = json["position"]["x"]
-        y = json["position"]["y"]
+        x = json["x"]
+        y = json["y"]
+        width = json["width"]
+        height = json["height"]
+        damage = json["damage"]
 
-        return Entity(id, entityType, health, x, y)
+        return Entity(id, entityType, health, x, y, width, height, damage)

@@ -7,7 +7,7 @@ from src.entityFactory import EntityFactory
 HOST = input('Enter host: ')
 PORT = input('Enter port: ')
 
-player = Entity(1, "player", 100, 50, 50)
+player = Entity(1, "player", 100, 50, 50, 20, 20, 5)
 
 if not HOST:
     HOST = "localhost"

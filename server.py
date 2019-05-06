@@ -15,9 +15,9 @@ class Server:
         self.isRunning = True
         self.__socket = Socket.socket(Socket.AF_INET, Socket.SOCK_STREAM)
         self.__socket.bind((self.__hostname, self.__port))
-        self.__socket.listen(5) # Temp value
+        self.__socket.listen(2) # Temp value # what the duck it doing?
         self.__socket.settimeout(0.1)
-        print("Server has been started on " + self.__hostname + ":" + str(self.__port))
+        print("Server has started on " + self.__hostname + ":" + str(self.__port))
 
         self.__acceptThread = Thread(target=self.__onConnection)
         self.__acceptThread.start()
@@ -58,7 +58,7 @@ class Server:
                 _factory = EntityFactory()
                 json = JSON.loads(msg)
                 _entity = _factory.make(json)
-                _entity.health += 1
+                _entity.hurt(5)
                 _logMessage = _address + " sent: " + msg
                 for client in self.clients:
                     json = _entity.toJSON()
@@ -67,8 +67,8 @@ class Server:
                 print(_logMessage)
             else:
                 print(_address + " has left")
-                client.close()
                 self.clients.remove(client)
+                client.close()
                 break
 
 
