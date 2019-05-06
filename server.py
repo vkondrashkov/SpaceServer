@@ -1,6 +1,9 @@
 import socket as Socket
+import json as JSON
 from threading import Thread
 from src.config import config
+from src.entity import Entity
+from src.entityFactory import EntityFactory
 
 class Server:
     def __init__(self):
@@ -47,15 +50,20 @@ class Server:
                 pass
         
     def __onReceive(self, client):
-        client.send(b"Successfully connected!")
+        #client.send(b"Successfully connected!")
         while self.isRunning:
             msg = client.recv(self.__bufferSize).decode("utf8")
             _address = self.__addresses[client][0] + ":" + str(self.__addresses[client][1])
             if msg != "{exit}" and msg is not "":
-                # broadcast(msg, name+": ")
+                _factory = EntityFactory()
+                json = JSON.loads(msg)
+                _entity = _factory.make(json)
+                _entity.health += 1
                 _logMessage = _address + " sent: " + msg
                 for client in self.clients:
-                    client.send(_logMessage.encode("utf8"))
+                    json = _entity.toJSON()
+                    client.send(JSON.dumps(json).encode("utf8"))
+                    # client.send(_logMessage.encode("utf8"))
                 print(_logMessage)
             else:
                 print(_address + " has left")
