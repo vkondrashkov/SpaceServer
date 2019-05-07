@@ -1,5 +1,6 @@
 import socket as Socket
 import json as JSON
+import uuid
 from threading import Thread
 from src.config import config
 from src.entity import Entity
@@ -7,9 +8,10 @@ from src.entityFactory import EntityFactory
 
 class Server:
     def __init__(self):
-        self.__addresses = {}
+        self.__entities = {}
         self.clients = []
         self.__loadConfig()
+        self.__entityFactory = EntityFactory()
     
     def start(self):
         self.isRunning = True
@@ -35,6 +37,7 @@ class Server:
         self.__port = config["port"]
         self.__bufferSize = config["bufferSize"]
 
+    # Events
     def __onConnection(self):
         print("Waiting for connections...")
         while self.isRunning:
@@ -42,35 +45,62 @@ class Server:
                 client, address = self.__socket.accept()
                 print("%s:%s has connected." % address)
                 self.clients.append(client)
-                self.__addresses[client] = address
+                _uuid = uuid.uuid4().hex
+                _entity = self.__entityFactory.makeUUID(_uuid)
+                self.__entities[_uuid] = _entity
+                client.send(_uuid.encode("utf8"))
 
                 self.__recieveThread = Thread(target=self.__onReceive, args=(client,))
                 self.__recieveThread.start()
+
+                self.__updateClients()
             except Socket.timeout:
                 pass
         
     def __onReceive(self, client):
-        #client.send(b"Successfully connected!")
         while self.isRunning:
             msg = client.recv(self.__bufferSize).decode("utf8")
-            _address = self.__addresses[client][0] + ":" + str(self.__addresses[client][1])
-            if msg != "{exit}" and msg is not "":
-                _factory = EntityFactory()
-                json = JSON.loads(msg)
-                _entity = _factory.make(json)
-                _entity.hurt(5)
-                _logMessage = _address + " sent: " + msg
-                for client in self.clients:
-                    json = _entity.toJSON()
-                    client.send(JSON.dumps(json).encode("utf8"))
-                    # client.send(_logMessage.encode("utf8"))
-                print(_logMessage)
+            request = JSON.loads(msg)
+            if request["event"] != "exit" and msg is not "":
+                _entity = self.__entities[request["id"]]
+                
+                if request["event"] == "move_up":
+                    _entity.move(0, 1)
+                if request["event"] == "move_down":
+                    _entity.move(0, -1)
+                if request["event"] == "move_left":
+                    _entity.move(-1, 0)
+                if request["event"] == "move_right":
+                    _entity.move(1, 0)
+
+                self.__entities[request["id"]] = _entity
+
+                self.__updateClients()
+
+                print(msg)
             else:
-                print(_address + " has left")
+                print(request["id"] + " has left")
                 self.clients.remove(client)
+                del self.__entities[request["id"]]
                 client.close()
                 break
 
+    # Core
+    def __gameLoop(self):
+        while self.isRunning:
+            for entity in self.__entities:
+                pass
+    
+    def entitiesListJSON(self):
+        '''Returns JSON string that contains all the entities in game world'''
+        entityList = []
+        for _, entity in self.__entities.items():
+            entityList.append(entity.toJSON())
+        return JSON.dumps(entityList)
+    
+    def __updateClients(self):
+        for client in self.clients:
+            client.send(self.entitiesListJSON().encode("utf8"))
 
 if __name__ == "__main__":
     server = Server()
@@ -83,6 +113,8 @@ if __name__ == "__main__":
             if key == "clients":
                 for client in server.clients:
                     print(client)
+            if key == "entities":
+                print(server.entitiesListJSON())
         except KeyboardInterrupt:
             server.stop()
             exit()
