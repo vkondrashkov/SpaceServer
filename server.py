@@ -1,6 +1,7 @@
 import socket as Socket
 import json as JSON
 import uuid
+import time
 from threading import Thread
 from src.config import config
 from src.entity import Entity
@@ -8,6 +9,8 @@ from src.entityFactory import EntityFactory
 
 class Server:
     def __init__(self):
+        self.isRunning = False
+        self.gameIsRunning = False
         self.__entities = {}
         self.clients = []
         self.__loadConfig()
@@ -30,6 +33,7 @@ class Server:
         self.__socket.close()
         self.isRunning = False
         self.__acceptThread.join()
+        self.__recieveThread.join()
         print("Server has been stopped.")
 
     def __loadConfig(self):
@@ -53,7 +57,7 @@ class Server:
                 self.__recieveThread = Thread(target=self.__onReceive, args=(client,))
                 self.__recieveThread.start()
 
-                self.__updateClients()
+                self.__updateGameLoop()
             except Socket.timeout:
                 pass
         
@@ -75,21 +79,34 @@ class Server:
 
                 self.__entities[request["id"]] = _entity
 
-                self.__updateClients()
-
+                self.__updateGameLoop()
                 print(msg)
             else:
                 print(request["id"] + " has left")
                 self.clients.remove(client)
                 del self.__entities[request["id"]]
                 client.close()
+                self.__updateGameLoop()
                 break
 
     # Core
+    def __updateGameLoop(self):
+        if not self.gameIsRunning and len(self.clients) != 0:
+            self.gameIsRunning = True
+            self.__gameThread = Thread(target=self.__gameLoop)
+            self.__gameThread.start()
+        if self.gameIsRunning and len(self.clients) == 0:
+            self.gameIsRunning = False
+            self.__gameThread.join()
+        print("Game is " + str(self.gameIsRunning))
+
     def __gameLoop(self):
-        while self.isRunning:
-            for entity in self.__entities:
-                pass
+        while self.gameIsRunning:
+            time.sleep(0.1)
+            for _, entity in self.__entities.items():
+                entity.update()
+            self.__updateClients()
+        
     
     def entitiesListJSON(self):
         '''Returns JSON string that contains all the entities in game world'''
