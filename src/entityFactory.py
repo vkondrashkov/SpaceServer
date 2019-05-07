@@ -18,11 +18,11 @@ class EntityFactory:
     def makeUUID(self, uuid):
         id = uuid
         entityType = "player"
-        health = 100
+        health = 10
         x = randint(0, 860)
         y = randint(320, 640)
-        width = 50
-        height = 50
+        width = 75
+        height = 55
         damage = 3
         velocity = 9
 

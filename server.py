@@ -64,14 +64,17 @@ class Server:
     def __onReceive(self, client):
         while self.isRunning:
             msg = client.recv(self.__bufferSize).decode("utf8")
-            request = JSON.loads(msg)
+            try:
+                request = JSON.loads(msg)
+            except:
+                continue
             if request["event"] != "exit" and msg is not "":
                 _entity = self.__entities[request["id"]]
-                
+                print(msg)
                 if request["event"] == "move_up":
-                    _entity.move(0, 1)
-                if request["event"] == "move_down":
                     _entity.move(0, -1)
+                if request["event"] == "move_down":
+                    _entity.move(0, 1)
                 if request["event"] == "move_left":
                     _entity.move(-1, 0)
                 if request["event"] == "move_right":
@@ -80,7 +83,6 @@ class Server:
                 self.__entities[request["id"]] = _entity
 
                 self.__updateGameLoop()
-                print(msg)
             else:
                 print(request["id"] + " has left")
                 self.clients.remove(client)
@@ -98,11 +100,10 @@ class Server:
         if self.gameIsRunning and len(self.clients) == 0:
             self.gameIsRunning = False
             self.__gameThread.join()
-        print("Game is " + str(self.gameIsRunning))
 
     def __gameLoop(self):
         while self.gameIsRunning:
-            time.sleep(0.1)
+            time.sleep(1 / 60)
             for _, entity in self.__entities.items():
                 entity.update()
             self.__updateClients()
