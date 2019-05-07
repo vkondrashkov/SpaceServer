@@ -103,7 +103,14 @@ class Server:
 
     def __gameLoop(self):
         while self.gameIsRunning:
-            time.sleep(1 / 60)
+            # Note: couldn't send 60 requests per second due to client
+            # can't parse JSON, because it receives several JSONs simultaneously
+            # so serializer can't parse wrong JSON and client caught exception
+            # That's why clients can't see real-time changes.
+            #
+            # 23 requests per second seems more convinient and stable.
+            # Should be changed ASAP
+            time.sleep(1 / 23)
             for _, entity in self.__entities.items():
                 entity.update()
             self.__updateClients()

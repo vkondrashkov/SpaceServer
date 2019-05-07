@@ -24,6 +24,6 @@ class EntityFactory:
         width = 75
         height = 55
         damage = 3
-        velocity = 9
+        velocity = 6
 
         return Entity(id, entityType, health, x, y, width, height, damage, velocity)
