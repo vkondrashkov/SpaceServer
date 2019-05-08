@@ -71,6 +71,8 @@ class Server:
             if request["event"] != "exit" and msg is not "":
                 _entity = self.__entities[request["id"]]
                 print(msg)
+                _originX, _originY = _entity.x, _entity.y
+                
                 if request["event"] == "move_up":
                     _entity.move(0, -1)
                 if request["event"] == "move_down":
@@ -79,6 +81,10 @@ class Server:
                     _entity.move(-1, 0)
                 if request["event"] == "move_right":
                     _entity.move(1, 0)
+
+                for collidingEntity in [entity for _, entity in self.__entities.items() if entity.id != request["id"]]:
+                    if _entity.collidesWith(collidingEntity):
+                        _entity.x, _entity.y = _originX, _originY
 
                 self.__entities[request["id"]] = _entity
 

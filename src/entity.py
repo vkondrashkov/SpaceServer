@@ -1,4 +1,16 @@
 class Entity:
+    @property
+    def id(self):
+        return self.__id
+
+    @property
+    def width(self):
+        return self.__width
+
+    @property
+    def height(self):
+        return self.__height
+
     def __init__(self, 
                 id, 
                 entityType, 
@@ -14,8 +26,8 @@ class Entity:
         self.__id = id
         self.__entityType = entityType
         self.__health = health
-        self.__x = x
-        self.__y = y
+        self.x = x
+        self.y = y
         self.__width = width
         self.__height = height
         self.__damage = damage
@@ -29,8 +41,8 @@ class Entity:
     # DeltaX and DeltaY should be equaled 1 or -1
     # Sign means direction for each axis
     def move(self, deltaX, deltaY):
-        self.__x += deltaX * self.__velocity
-        self.__y += deltaY * self.__velocity
+        self.x += deltaX * self.__velocity
+        self.y += deltaY * self.__velocity
 
     # Update method which called every tick by server
     def update(self):
@@ -42,10 +54,28 @@ class Entity:
         json["id"] = self.__id
         json["entityType"] = self.__entityType
         json["health"] = self.__health
-        json["x"] = self.__x
-        json["y"] = self.__y
-        json["width"] = self.__width
-        json["height"] = self.__height
+        json["x"] = self.x
+        json["y"] = self.y
+        json["width"] = self.width
+        json["height"] = self.height
         json["damage"] = self.__damage
         json["velocity"] = self.__velocity
         return json
+    
+    def collidesWith(self, entity):
+        return (self.x + self.width + self.__velocity) >= entity.x and \
+            self.x - self.__velocity <= entity.x + entity.width and \
+            self.y + self.height + self.__velocity >= entity.y and \
+            self.y - self.__velocity <= entity.y + entity.height
+        # return ((self.y - self.__velocity) >= (entity.y + entity.height) or \
+        #     (self.y + self.height + self.__velocity) <= entity.y) and \
+        #     ((self.x - self.__velocity) >= (entity.x + entity.width) or \
+        #     (self.x + self.width + self.__velocity) <= entity.x)
+
+
+#             if (r1x + r1w >= r2x &&    // r1 right edge past r2 left
+#       r1x <= r2x + r2w &&    // r1 left edge past r2 right
+#       r1y + r1h >= r2y &&    // r1 top edge past r2 bottom
+#       r1y <= r2y + r2h) {    // r1 bottom edge past r2 top
+#         return true;
+#   }
