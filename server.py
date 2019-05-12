@@ -15,6 +15,7 @@ class Server:
         self.clients = []
         self.__loadConfig()
         self.__entityFactory = EntityFactory()
+        self.__spawnEnemyTick = 30
     
     def start(self):
         self.isRunning = True
@@ -50,7 +51,7 @@ class Server:
                 print("%s:%s has connected." % address)
                 self.clients.append(client)
                 _uuid = uuid.uuid4().hex
-                _entity = self.__entityFactory.makeUUID(_uuid)
+                _entity = self.__entityFactory.makePlayerWithUUID(_uuid)
                 self.__entities[_uuid] = _entity
                 client.send(_uuid.encode("utf8"))
 
@@ -81,6 +82,11 @@ class Server:
                     _entity.move(-1, 0)
                 if request["event"] == "move_right":
                     _entity.move(1, 0)
+                if request["event"] == "shoot":
+                    if _entity.managedShot():
+                        _bulletUuid = uuid.uuid4().hex
+                        _bullet = self.__entityFactory.makeBulletWithUUID(_bulletUuid, _entity.x + _entity.width / 2, _entity.y, _entity.damage, deltaYConstant=-1)
+                        self.__entities[_bulletUuid] = _bullet
 
                 for collidingEntity in [entity for _, entity in self.__entities.items() if entity.id != request["id"]]:
                     if _entity.collidesWith(collidingEntity):
@@ -117,9 +123,31 @@ class Server:
             # 23 requests per second seems more convinient and stable.
             # Should be changed ASAP
             time.sleep(1 / 23)
-            for _, entity in self.__entities.items():
+            self.__cycleSpawnEnemy()
+            entitiesCopy = self.__entities.copy()
+            for _uuid, entity in entitiesCopy.items():
                 entity.update()
+                if entity.entityType == "enemy" and entity.managedShot():
+                    _bulletUuid = uuid.uuid4().hex
+                    _bullet = self.__entityFactory.makeBulletWithUUID(_bulletUuid, entity.x + entity.width / 2, entity.y, entity.damage, deltaYConstant=1)
+                    self.__entities[_bulletUuid] = _bullet
+                if entity.y >= 640:
+                    del self.__entities[_uuid]
+                    print("Deleted " + _uuid + " (" + entity.entityType + ")")
             self.__updateClients()
+
+    def __cycleSpawnEnemy(self):
+        if self.__spawnEnemyTick:
+            self.__spawnEnemyTick -= 1
+        else:
+            # Generates random horizontal position
+            # considering it's width to avoid generating
+            # object beyond Screen borders.
+            _uuid = uuid.uuid4().hex
+            _entity = self.__entityFactory.makeEnemyWithUUID(_uuid)
+            self.__entities[_uuid] = _entity
+            print("Spawned " + _uuid + " (" + _entity.entityType + ")")
+            self.__spawnEnemyTick = 240
         
     
     def entitiesListJSON(self):

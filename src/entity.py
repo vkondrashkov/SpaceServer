@@ -11,6 +11,14 @@ class Entity:
     def height(self):
         return self.__height
 
+    @property
+    def entityType(self):
+        return self.__entityType
+    
+    @property
+    def damage(self):
+        return self.__damage
+
     def __init__(self, 
                 id, 
                 entityType, 
@@ -21,6 +29,7 @@ class Entity:
                 height,
                 damage,
                 velocity,
+                shootDelay,
                 deltaXConstant=0,
                 deltaYConstant=0):
         self.__id = id
@@ -32,6 +41,8 @@ class Entity:
         self.__height = height
         self.__damage = damage
         self.__velocity = velocity
+        self.__shootDelay = shootDelay
+        self.__shootTick = shootDelay / 2
         self.__deltaXConstant = deltaXConstant
         self.__deltaYConstant = deltaYConstant
     
@@ -46,13 +57,26 @@ class Entity:
 
     # Update method which called every tick by server
     def update(self):
+        self.__shootTick -= 1
         if self.__deltaXConstant != 0 or self.__deltaYConstant != 0:
             self.move(self.__deltaXConstant, self.__deltaYConstant)
+
+    # Actually I wouldn't make such mess and monkeycode but...
+    # Who cares? ¯\_(ツ)_/¯
+    # Returns True if managed to shoot and False whether not
+    def managedShot(self):
+        if self.entityType == "bullet":
+            return False
+        if self.__shootTick > 0:
+            return False
+        self.__shootTick = self.__shootDelay
+        print(self.id + " shot")
+        return True
 
     def toJSON(self):
         json = {}
         json["id"] = self.__id
-        json["entityType"] = self.__entityType
+        json["entityType"] = self.entityType
         json["health"] = self.__health
         json["x"] = self.x
         json["y"] = self.y
@@ -60,6 +84,7 @@ class Entity:
         json["height"] = self.height
         json["damage"] = self.__damage
         json["velocity"] = self.__velocity
+        json["shootDelay"] = self.__shootDelay
         return json
     
     def collidesWith(self, entity):
@@ -67,15 +92,3 @@ class Entity:
             self.x - self.__velocity <= entity.x + entity.width and \
             self.y + self.height + self.__velocity >= entity.y and \
             self.y - self.__velocity <= entity.y + entity.height
-        # return ((self.y - self.__velocity) >= (entity.y + entity.height) or \
-        #     (self.y + self.height + self.__velocity) <= entity.y) and \
-        #     ((self.x - self.__velocity) >= (entity.x + entity.width) or \
-        #     (self.x + self.width + self.__velocity) <= entity.x)
-
-
-#             if (r1x + r1w >= r2x &&    // r1 right edge past r2 left
-#       r1x <= r2x + r2w &&    // r1 left edge past r2 right
-#       r1y + r1h >= r2y &&    // r1 top edge past r2 bottom
-#       r1y <= r2y + r2h) {    // r1 bottom edge past r2 top
-#         return true;
-#   }

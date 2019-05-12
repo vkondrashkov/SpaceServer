@@ -33,8 +33,8 @@ def receive():
             if not msg:
                 raise OSError
             json = JSON.loads(msg)
-            print(msg)
-        except OSError:  # Possibly client has left the chat.
+            # print(msg)
+        except OSError:  # Possibly client has left.
             client_socket.close()
             break
 
