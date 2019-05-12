@@ -129,15 +129,28 @@ class Server:
                 entity.update()
                 if entity.entityType == "enemy" and entity.managedShot():
                     _bulletUuid = uuid.uuid4().hex
-                    _bullet = self.__entityFactory.makeBulletWithUUID(_bulletUuid, entity.x + entity.width / 2, entity.y, entity.damage, deltaYConstant=1)
+                    _bullet = self.__entityFactory.makeBulletWithUUID(_bulletUuid, entity.x + entity.width / 2, entity.y + entity.height + 5, entity.damage, deltaYConstant=1)
                     self.__entities[_bulletUuid] = _bullet
                 if entity.y >= 640:
                     del self.__entities[_uuid]
                     print("Deleted " + _uuid + " (" + entity.entityType + ")")
+                if entity.health <= 0:
+                    del self.__entities[_uuid]
+
+                if entity.entityType == "bullet":
+                    continue
+                for collidingEntity in [entity for _, entity in self.__entities.items() if entity.id != _uuid]:
+                    if entity.collidesWith(collidingEntity):
+                        if collidingEntity.entityType == "bullet":
+                            entity.hurt(collidingEntity.damage)
+                            del self.__entities[collidingEntity.id]
+                        if collidingEntity.entityType == "enemy":
+                            entity.hurt(entity.health)
+
             self.__updateClients()
 
     def __cycleSpawnEnemy(self):
-        if self.__spawnEnemyTick:
+        if self.__spawnEnemyTick > 0:
             self.__spawnEnemyTick -= 1
         else:
             # Generates random horizontal position

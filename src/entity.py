@@ -19,6 +19,10 @@ class Entity:
     def damage(self):
         return self.__damage
 
+    @property
+    def health(self):
+        return self.__health
+
     def __init__(self, 
                 id, 
                 entityType, 
