@@ -12,7 +12,7 @@ class Server:
         self.isRunning = False
         self.gameIsRunning = False
         self.__entities = {}
-        self.clients = []
+        self.clients = {}
         self.__loadConfig()
         self.__entityFactory = EntityFactory()
         self.__spawnEnemyTick = 30
@@ -29,7 +29,7 @@ class Server:
         self.__acceptThread.start()
     
     def stop(self):
-        for client in self.clients:
+        for _, client in self.clients.items():
             client.close()
         self.__socket.close()
         self.isRunning = False
@@ -49,8 +49,8 @@ class Server:
             try:
                 client, address = self.__socket.accept()
                 print("%s:%s has connected." % address)
-                self.clients.append(client)
                 _uuid = uuid.uuid4().hex
+                self.clients[_uuid] = client
                 _entity = self.__entityFactory.makePlayerWithUUID(_uuid)
                 self.__entities[_uuid] = _entity
                 client.send(_uuid.encode("utf8"))
@@ -85,19 +85,24 @@ class Server:
                 if request["event"] == "shoot":
                     if _entity.managedShot():
                         _bulletUuid = uuid.uuid4().hex
-                        _bullet = self.__entityFactory.makeBulletWithUUID(_bulletUuid, _entity.x + _entity.width / 2, _entity.y, _entity.damage, deltaYConstant=-1)
+                        _bullet = self.__entityFactory.makeBulletWithUUID(_bulletUuid, _entity.x + _entity.width / 2, _entity.y, _entity.damage, deltaYConstant=-1, ownerUUID=_entity.id)
                         self.__entities[_bulletUuid] = _bullet
 
                 for collidingEntity in [entity for _, entity in self.__entities.items() if entity.id != request["id"]]:
                     if _entity.collidesWith(collidingEntity):
                         _entity.x, _entity.y = _originX, _originY
 
+                if _entity.x + _entity.width >= 860 or _entity.x <= 0:
+                    _entity.x = _originX
+                if _entity.y + _entity.height >= 640 or _entity.y <= 0:
+                    _entity.y = _originY
+
                 self.__entities[request["id"]] = _entity
 
                 self.__updateGameLoop()
             else:
                 print(request["id"] + " has left")
-                self.clients.remove(client)
+                del self.clients[request["id"]]
                 del self.__entities[request["id"]]
                 client.close()
                 self.__updateGameLoop()
@@ -129,19 +134,25 @@ class Server:
                 entity.update()
                 if entity.entityType == "enemy" and entity.managedShot():
                     _bulletUuid = uuid.uuid4().hex
-                    _bullet = self.__entityFactory.makeBulletWithUUID(_bulletUuid, entity.x + entity.width / 2, entity.y + entity.height + 5, entity.damage, deltaYConstant=1)
+                    _bullet = self.__entityFactory.makeBulletWithUUID(_bulletUuid, entity.x + entity.width / 2, entity.y + entity.height + 5, entity.damage, deltaYConstant=1, ownerUUID=entity.id)
                     self.__entities[_bulletUuid] = _bullet
                 if entity.y >= 640:
                     del self.__entities[_uuid]
                     print("Deleted " + _uuid + " (" + entity.entityType + ")")
                 if entity.health <= 0:
-                    del self.__entities[_uuid]
+                    try:
+                        _client = self.clients[_uuid]
+                        _client.send("{\"exit\": \"true\"}".encode("utf8"))
+                        continue
+                    except Exception:
+                        del self.__entities[_uuid]
+                        pass
 
                 if entity.entityType == "bullet":
                     continue
                 for collidingEntity in [entity for _, entity in self.__entities.items() if entity.id != _uuid]:
                     if entity.collidesWith(collidingEntity):
-                        if collidingEntity.entityType == "bullet":
+                        if collidingEntity.entityType == "bullet" and collidingEntity.ownerUUID != entity.id:
                             entity.hurt(collidingEntity.damage)
                             del self.__entities[collidingEntity.id]
                         if collidingEntity.entityType == "enemy":
@@ -171,7 +182,7 @@ class Server:
         return JSON.dumps(entityList)
     
     def __updateClients(self):
-        for client in self.clients:
+        for _, client in self.clients.items():
             client.send(self.entitiesListJSON().encode("utf8"))
 
 if __name__ == "__main__":
@@ -183,7 +194,7 @@ if __name__ == "__main__":
             if key == "exit":
                 raise KeyboardInterrupt
             if key == "clients":
-                for client in server.clients:
+                for _, client in server.clients.items():
                     print(client)
             if key == "entities":
                 print(server.entitiesListJSON())

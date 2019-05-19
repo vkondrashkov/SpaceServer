@@ -20,13 +20,13 @@ class EntityFactory:
         id = uuid
         entityType = "player"
         health = 10
-        x = randint(0, 860)
-        y = randint(320, 640)
+        x = randint(0, 780)
+        y = randint(320, 580)
         width = 75
         height = 55
         damage = 3
         velocity = 6
-        shootDelay = 45
+        shootDelay = 10
 
         return Entity(id, entityType, health, x, y, width, height, damage, velocity, shootDelay)
     
@@ -44,7 +44,7 @@ class EntityFactory:
 
         return Entity(id, entityType, health, x, y, width, height, damage, velocity, shootDelay, deltaYConstant=1)
 
-    def makeBulletWithUUID(self, uuid, x, y, damage, deltaYConstant):
+    def makeBulletWithUUID(self, uuid, x, y, damage, deltaYConstant, ownerUUID):
         id = uuid
         entityType = "bullet"
         health = 1
@@ -52,4 +52,4 @@ class EntityFactory:
         height = 15
         velocity = 12
         
-        return Entity(id, entityType, health, x, y, width, height, damage, velocity, 0, deltaYConstant=deltaYConstant)
+        return Entity(id, entityType, health, x, y, width, height, damage, velocity, 0, deltaYConstant=deltaYConstant, ownerUUID=ownerUUID)

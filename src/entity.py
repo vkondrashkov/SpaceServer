@@ -20,6 +20,10 @@ class Entity:
         return self.__damage
 
     @property
+    def velocity(self):
+        return self.__velocity
+
+    @property
     def health(self):
         return self.__health
 
@@ -35,7 +39,8 @@ class Entity:
                 velocity,
                 shootDelay,
                 deltaXConstant=0,
-                deltaYConstant=0):
+                deltaYConstant=0,
+                ownerUUID=""):
         self.__id = id
         self.__entityType = entityType
         self.__health = health
@@ -49,6 +54,7 @@ class Entity:
         self.__shootTick = shootDelay / 2
         self.__deltaXConstant = deltaXConstant
         self.__deltaYConstant = deltaYConstant
+        self.ownerUUID = ownerUUID
     
     def hurt(self, damage):
         self.__health -= damage
